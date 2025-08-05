@@ -9,9 +9,7 @@ clean_broadband <- function(folder, file_name, year) {
   path <- file.path(folder, file_name)
   df <- read_csv(path)
   
-  
-  colnames(df) <- tolower(colnames(df))  # make lowercase for easier handling
-  
+  colnames(df) <- tolower(colnames(df))  # lowercase for easier handling
   la_col <- grep("laua_name|local_authority|name", colnames(df), value = TRUE)[1]
   
   df_clean <- df %>%
@@ -28,4 +26,19 @@ bb_2024 <- clean_broadband("2024 broadband speed", "202401_fixed_laua_coverage_r
 
 broadband_all_years <- bind_rows(bb_2021, bb_2022, bb_2023, bb_2024)
 
-glimpse(broadband_all_years)
+broadband_2024_speed <- broadband_all_years %>%
+  filter(Year == 2024, laua_name %in% target_towns) %>%
+  mutate(
+    EstimatedAvgSpeed = (
+      (`% of premises with 0<2mbit/s download speed` * 1.5) +
+        (`% of premises with 2<5mbit/s download speed` * 3.5) +
+        (`% of premises with 5<10mbit/s download speed` * 7.5) +
+        (`% of premises with 10<30mbit/s download speed` * 20) +
+        (`% of premises with 30<300mbit/s download speed` * 150) +
+        (`% of premises with >=300mbit/s download speed` * 500)
+    ) / 100
+  ) %>%
+  select(laua_name, EstimatedAvgSpeed) %>%
+  arrange(desc(EstimatedAvgSpeed))
+
+print(broadband_2024_speed)
